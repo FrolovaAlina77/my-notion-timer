@@ -2,11 +2,11 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <title>Flip Countdown Timer with Controls</title>
+  <title>Flip Countdown Timer Fixed</title>
   <style>
-    /* НАСТРОЙКА РАЗМЕРА: меняйте этот коэффициент (1 — базовый размер, 1.5 — крупнее, 0.7 — меньше) */
+    /* НАСТРОЙКА РАЗМЕРА: меняйте этот коэффициент (1 — базовый, 1.3 — крупнее, 0.8 — компактнее) */
     :root {
-      --clock-scale: 1.2; 
+      --clock-scale: 1.1; 
     }
 
     * {
@@ -16,22 +16,22 @@
     }
 
     body {
-      background: transparent; /* Прозрачный фон для интеграции в Notion */
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: transparent;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       display: flex;
-      flex-direction: column;
       justify-content: center;
       align-items: center;
-      height: 100vh;
+      min-height: 100vh;
+      padding: 20px;
       overflow: hidden;
     }
 
-    /* Главный контейнер для часов и кнопки */
+    /* Главный контейнер */
     .widget-wrap {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: calc(24px * var(--clock-scale));
+      gap: calc(20px * var(--clock-scale));
       transform: scale(var(--clock-scale));
       transform-origin: center;
     }
@@ -39,7 +39,7 @@
     /* Контейнер таймера */
     .timer-container {
       display: flex;
-      gap: 20px;
+      gap: 16px;
     }
 
     /* Группа для минут / секунд */
@@ -53,14 +53,14 @@
       position: relative;
       width: 60px;
       height: 90px;
-      font-size: 70px;
+      font-size: 65px;
       font-weight: 700;
       line-height: 90px;
       color: #ffffff;
       background: #1e1e1e;
       border-radius: 8px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
-      perspective: 200px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+      perspective: 300px;
     }
 
     /* Половинки карточки */
@@ -71,14 +71,14 @@
       height: 50%;
       overflow: hidden;
       text-align: center;
-      background: #222;
+      background: #252525;
     }
 
     .top, .flip-top {
       top: 0;
       border-top-left-radius: 8px;
       border-top-right-radius: 8px;
-      border-bottom: 1px solid rgba(0, 0, 0, 0.4);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.5);
     }
 
     .bottom, .flip-bottom {
@@ -88,7 +88,7 @@
       line-height: 0;
     }
 
-    /* Коррекция положения цифр в половинках */
+    /* Позиционирование цифр */
     .top-text, .flip-top-text {
       position: absolute;
       top: 0;
@@ -117,7 +117,7 @@
       z-index: 2;
     }
 
-    /* Стили анимации переворота */
+    /* Анимация переворота */
     .animate .flip-top {
       animation: flipTop 0.3s ease-in forwards;
     }
@@ -134,30 +134,39 @@
       100% { transform: rotateX(0deg); }
     }
 
-    /* Стили для кнопки управления */
+    /* Контейнер для кнопок */
+    .controls {
+      display: flex;
+      gap: 10px;
+    }
+
+    /* Стили кнопок (сделаны темными и контрастными для видимости) */
     .control-btn {
-      background: rgba(255, 255, 255, 0.15);
-      backdrop-filter: blur(5px);
-      -webkit-backdrop-filter: blur(5px);
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: #2b2b2b;
+      border: 1px solid #444444;
       color: #ffffff;
-      padding: 8px 24px;
-      font-size: 14px;
+      padding: 8px 20px;
+      font-size: 13px;
       font-weight: 600;
-      border-radius: 20px;
+      border-radius: 6px;
       cursor: pointer;
       transition: all 0.2s ease;
-      letter-spacing: 0.5px;
       outline: none;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
     }
 
     .control-btn:hover {
-      background: rgba(255, 255, 255, 0.25);
-      transform: translateY(-1px);
+      background: #383838;
+      border-color: #555555;
     }
 
     .control-btn:active {
-      transform: translateY(1px);
+      transform: scale(0.97);
+    }
+    
+    .control-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
   </style>
 </head>
@@ -198,17 +207,21 @@
       </div>
     </div>
 
-    <!-- Кнопка Play/Pause -->
-    <button class="control-btn" id="toggleBtn">Пауза</button>
+    <!-- Кнопки управления -->
+    <div class="controls">
+      <button class="control-btn" id="toggleBtn">Пауза</button>
+      <button class="control-btn" id="resetBtn">Сброс</button>
+    </div>
   </div>
 
   <script>
-    // Настройки времени (25 минут)
-    let timeLeft = 25 * 60;
+    const START_TIME = 25 * 60; // 25 минут в секундах
+    let timeLeft = START_TIME;
     let timerInterval = null;
-    let isRunning = true; // По умолчанию таймер запускается сразу
+    let isRunning = true;
 
     const toggleBtn = document.getElementById('toggleBtn');
+    const resetBtn = document.getElementById('resetBtn');
 
     function updateCard(cardId, newValue) {
       const card = document.getElementById(cardId);
@@ -228,24 +241,17 @@
       setTimeout(() => {
         bottomText.textContent = newValue;
         card.classList.remove('animate');
-      }, 600);
+      }, 550); // Чуть уменьшено время очистки класса для исключения зависаний
     }
 
     function updateTimerDisplay() {
-      if (timeLeft < 0) {
-        clearInterval(timerInterval);
-        toggleBtn.textContent = "Готово";
-        toggleBtn.disabled = true;
-        isRunning = false;
-        return;
-      }
-
       const minutes = Math.floor(timeLeft / 60);
       const seconds = timeLeft % 60;
 
       const mStr = String(minutes).padStart(2, '0');
       const sStr = String(seconds).padStart(2, '0');
 
+      // ИСПРАВЛЕНО: Каждая карточка теперь берет строго свой символ из строки (0 или 1)
       updateCard('m1', mStr[0]);
       updateCard('m2', mStr[1]);
       updateCard('s1', sStr[0]);
@@ -257,13 +263,18 @@
         timeLeft--;
         updateTimerDisplay();
       } else {
-        updateTimerDisplay();
+        clearInterval(timerInterval);
+        toggleBtn.textContent = "Готово";
+        toggleBtn.disabled = true;
+        isRunning = false;
       }
     }
 
     function startTimer() {
+      clearInterval(timerInterval); // Безопасный перезапуск без наслаивания интервалов
       timerInterval = setInterval(tick, 1000);
       toggleBtn.textContent = "Пауза";
+      toggleBtn.disabled = false;
       isRunning = true;
     }
 
@@ -273,10 +284,8 @@
       isRunning = false;
     }
 
-    // Обработчик клика на кнопку
     toggleBtn.addEventListener('click', () => {
       if (timeLeft <= 0) return;
-      
       if (isRunning) {
         pauseTimer();
       } else {
@@ -284,7 +293,14 @@
       }
     });
 
-    // Инициализация при старте
+    resetBtn.addEventListener('click', () => {
+      pauseTimer();
+      timeLeft = START_TIME;
+      updateTimerDisplay();
+      startTimer();
+    });
+
+    // Стартовая инициализация
     updateTimerDisplay();
     startTimer();
   </script>
