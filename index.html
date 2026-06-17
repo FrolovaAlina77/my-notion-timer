@@ -1,225 +1,292 @@
-<!DOCTYPE html>
+html<!DOCTYPE html>
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>25:00 — Механический Flip Таймер</title>
+  <title>Flip Countdown Timer with Controls</title>
   <style>
-    body {
-      font-family: system-ui, -apple-system, sans-serif;
-      background: #1a0000;
-      color: white;
-      text-align: center;
-      padding: 40px 20px;
+    /* НАСТРОЙКА РАЗМЕРА: меняйте этот коэффициент (1 — базовый размер, 1.5 — крупнее, 0.7 — меньше) */
+    :root {
+      --clock-scale: 1.2; 
+    }
+
+    * {
+      box-sizing: border-box;
       margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: transparent; /* Прозрачный фон для интеграции в Notion */
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
       height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Главный контейнер для часов и кнопки */
+    .widget-wrap {
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
+      gap: calc(24px * var(--clock-scale));
+      transform: scale(var(--clock-scale));
+      transform-origin: center;
     }
 
-    h2 {
-      color: #ff3366;
-      margin-bottom: 30px;
-      font-size: 32px;
-    }
-
-    .flip-clock {
+    /* Контейнер таймера */
+    .timer-container {
       display: flex;
-      gap: 15px;
-      align-items: center;
+      gap: 20px;
     }
 
-    .digit {
-      position: relative;
-      width: 130px;
-      height: 180px;
-      perspective: 1200px;
+    /* Группа для минут / секунд */
+    .flip-group {
+      display: flex;
+      gap: 4px;
     }
 
+    /* Конструкция одной цифры */
     .flip-card {
+      position: relative;
+      width: 60px;
+      height: 90px;
+      font-size: 70px;
+      font-weight: 700;
+      line-height: 90px;
+      color: #ffffff;
+      background: #1e1e1e;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+      perspective: 200px;
+    }
+
+    /* Половинки карточки */
+    .top, .bottom, .flip-top, .flip-bottom {
       position: absolute;
+      left: 0;
+      width: 100%;
+      height: 50%;
+      overflow: hidden;
+      text-align: center;
+      background: #222;
+    }
+
+    .top, .flip-top {
+      top: 0;
+      border-top-left-radius: 8px;
+      border-top-right-radius: 8px;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.4);
+    }
+
+    .bottom, .flip-bottom {
+      bottom: 0;
+      border-bottom-left-radius: 8px;
+      border-bottom-right-radius: 8px;
+      line-height: 0;
+    }
+
+    /* Коррекция положения цифр в половинках */
+    .top-text, .flip-top-text {
+      position: absolute;
+      top: 0;
+      left: 0;
       width: 100%;
       height: 100%;
-      transform-style: preserve-3d;
-      transition: transform 0.8s cubic-bezier(0.25, 0.1, 0.25, 1);
     }
 
-    .digit.flipping .flip-card {
-      transform: rotateX(-180deg);
-    }
-
-    .front, .back {
+    .bottom-text, .flip-bottom-text {
       position: absolute;
+      bottom: 0;
+      left: 0;
       width: 100%;
       height: 100%;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 120px;
-      font-weight: 900;
-      backface-visibility: hidden;
-      box-shadow: 0 15px 25px rgba(0,0,0,0.7);
-      border: 4px solid #660011;
     }
 
-    .front {
-      background: linear-gradient(#ff1a4d, #e6003d);
-      color: white;
-      z-index: 2;
-    }
-
-    .back {
-      background: linear-gradient(#cc0033, #990022);
-      color: white;
-      transform: rotateX(180deg);
-    }
-
-    /* Верхняя и нижняя тени для эффекта "половинок" */
-    .front::before, .back::before {
-      content: '';
-      position: absolute;
-      left: 0; right: 0; top: 50%;
-      height: 4px;
-      background: rgba(0,0,0,0.6);
+    /* Анимационные слои */
+    .flip-top {
+      transform-origin: bottom;
       z-index: 3;
     }
 
-    .separator {
-      font-size: 110px;
-      color: #ff3366;
-      font-weight: bold;
-      margin-top: -30px;
+    .flip-bottom {
+      transform-origin: top;
+      transform: rotateX(90deg);
+      z-index: 2;
     }
 
-    .label {
-      font-size: 18px;
-      color: #ff99aa;
-      margin-top: 12px;
-      letter-spacing: 2px;
+    /* Стили анимации переворота */
+    .animate .flip-top {
+      animation: flipTop 0.3s ease-in forwards;
     }
 
-    button {
-      margin-top: 50px;
-      padding: 16px 40px;
-      font-size: 20px;
-      border: none;
-      border-radius: 50px;
-      background: #ff3366;
-      color: white;
+    .animate .flip-bottom {
+      animation: flipBottom 0.3s ease-out 0.3s forwards;
+    }
+
+    @keyframes flipTop {
+      100% { transform: rotateX(-90deg); }
+    }
+
+    @keyframes flipBottom {
+      100% { transform: rotateX(0deg); }
+    }
+
+    /* Стили для кнопки управления */
+    .control-btn {
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+      padding: 8px 24px;
+      font-size: 14px;
+      font-weight: 600;
+      border-radius: 20px;
       cursor: pointer;
+      transition: all 0.2s ease;
+      letter-spacing: 0.5px;
+      outline: none;
     }
 
-    button:hover { background: #ff1a4d; }
+    .control-btn:hover {
+      background: rgba(255, 255, 255, 0.25);
+      transform: translateY(-1px);
+    }
+
+    .control-btn:active {
+      transform: translateY(1px);
+    }
   </style>
 </head>
 <body>
-  <h2>🔥 Механический Листовой Таймер</h2>
 
-  <div class="flip-clock">
-    <!-- Минуты -->
-    <div>
-      <div class="digit" id="min-tens">
-        <div class="flip-card">
-          <div class="front" id="min-tens-front">2</div>
-          <div class="back" id="min-tens-back">2</div>
+  <div class="widget-wrap">
+    <div class="timer-container">
+      <!-- Минуты -->
+      <div class="flip-group">
+        <div class="flip-card" id="m1">
+          <div class="top"><div class="top-text">2</div></div>
+          <div class="bottom"><div class="bottom-text">2</div></div>
+          <div class="flip-top"><div class="flip-top-text">2</div></div>
+          <div class="flip-bottom"><div class="flip-bottom-text">2</div></div>
+        </div>
+        <div class="flip-card" id="m2">
+          <div class="top"><div class="top-text">5</div></div>
+          <div class="bottom"><div class="bottom-text">5</div></div>
+          <div class="flip-top"><div class="flip-top-text">5</div></div>
+          <div class="flip-bottom"><div class="flip-bottom-text">5</div></div>
         </div>
       </div>
-      <div class="digit" id="min-ones">
-        <div class="flip-card">
-          <div class="front" id="min-ones-front">5</div>
-          <div class="back" id="min-ones-back">5</div>
+
+      <!-- Секунды -->
+      <div class="flip-group">
+        <div class="flip-card" id="s1">
+          <div class="top"><div class="top-text">0</div></div>
+          <div class="bottom"><div class="bottom-text">0</div></div>
+          <div class="flip-top"><div class="flip-top-text">0</div></div>
+          <div class="flip-bottom"><div class="flip-bottom-text">0</div></div>
+        </div>
+        <div class="flip-card" id="s2">
+          <div class="top"><div class="top-text">0</div></div>
+          <div class="bottom"><div class="bottom-text">0</div></div>
+          <div class="flip-top"><div class="flip-top-text">0</div></div>
+          <div class="flip-bottom"><div class="flip-bottom-text">0</div></div>
         </div>
       </div>
-      <div class="label">МИНУТЫ</div>
     </div>
 
-    <div class="separator">:</div>
-
-    <!-- Секунды -->
-    <div>
-      <div class="digit" id="sec-tens">
-        <div class="flip-card">
-          <div class="front" id="sec-tens-front">0</div>
-          <div class="back" id="sec-tens-back">0</div>
-        </div>
-      </div>
-      <div class="digit" id="sec-ones">
-        <div class="flip-card">
-          <div class="front" id="sec-ones-front">0</div>
-          <div class="back" id="sec-ones-back">0</div>
-        </div>
-      </div>
-      <div class="label">СЕКУНДЫ</div>
-    </div>
-  </div>
-
-  <div>
-    <button onclick="startTimer()">▶ Старт</button>
-    <button onclick="pauseTimer()">⏸ Пауза</button>
-    <button onclick="resetTimer()">↺ Сброс</button>
+    <!-- Кнопка Play/Pause -->
+    <button class="control-btn" id="toggleBtn">Пауза</button>
   </div>
 
   <script>
+    // Настройки времени (25 минут)
     let timeLeft = 25 * 60;
-    let timerId = null;
-    let isRunning = false;
+    let timerInterval = null;
+    let isRunning = true; // По умолчанию таймер запускается сразу
 
-    function updateDigit(groupId, newValue) {
-      const digit = document.getElementById(groupId);
-      const front = document.getElementById(groupId + '-front');
-      const back = document.getElementById(groupId + '-back');
+    const toggleBtn = document.getElementById('toggleBtn');
 
-      if (front.textContent === newValue) return;
+    function updateCard(cardId, newValue) {
+      const card = document.getElementById(cardId);
+      const topText = card.querySelector('.top-text');
+      const bottomText = card.querySelector('.bottom-text');
+      const flipTopText = card.querySelector('.flip-top-text');
+      const flipBottomText = card.querySelector('.flip-bottom-text');
 
-      back.textContent = newValue;
-      digit.classList.add('flipping');
+      if (topText.textContent === newValue) return;
+
+      flipTopText.textContent = topText.textContent;
+      flipBottomText.textContent = newValue;
+      topText.textContent = newValue;
+
+      card.classList.add('animate');
 
       setTimeout(() => {
-        front.textContent = newValue;
-        digit.classList.remove('flipping');
-      }, 800);
+        bottomText.textContent = newValue;
+        card.classList.remove('animate');
+      }, 600);
     }
 
-    function updateDisplay() {
+    function updateTimerDisplay() {
+      if (timeLeft < 0) {
+        clearInterval(timerInterval);
+        toggleBtn.textContent = "Готово";
+        toggleBtn.disabled = true;
+        isRunning = false;
+        return;
+      }
+
       const minutes = Math.floor(timeLeft / 60);
       const seconds = timeLeft % 60;
 
-      updateDigit('min-tens', Math.floor(minutes / 10).toString());
-      updateDigit('min-ones', (minutes % 10).toString());
-      updateDigit('sec-tens', Math.floor(seconds / 10).toString());
-      updateDigit('sec-ones', (seconds % 10).toString());
+      const mStr = String(minutes).padStart(2, '0');
+      const sStr = String(seconds).padStart(2, '0');
+
+      updateCard('m1', mStr[0]);
+      updateCard('m2', mStr[1]);
+      updateCard('s1', sStr[0]);
+      updateCard('s2', sStr[1]);
+    }
+
+    function tick() {
+      if (timeLeft > 0) {
+        timeLeft--;
+        updateTimerDisplay();
+      } else {
+        updateTimerDisplay();
+      }
     }
 
     function startTimer() {
-      if (isRunning) return;
+      timerInterval = setInterval(tick, 1000);
+      toggleBtn.textContent = "Пауза";
       isRunning = true;
-      timerId = setInterval(() => {
-        if (timeLeft > 0) {
-          timeLeft--;
-          updateDisplay();
-        } else {
-          clearInterval(timerId);
-          isRunning = false;
-          alert("🎉 Таймер завершён! Отличная сессия! 🔥");
-        }
-      }, 1000);
     }
 
     function pauseTimer() {
-      clearInterval(timerId);
+      clearInterval(timerInterval);
+      toggleBtn.textContent = "Старт";
       isRunning = false;
     }
 
-    function resetTimer() {
-      pauseTimer();
-      timeLeft = 25 * 60;
-      updateDisplay();
-    }
+    // Обработчик клика на кнопку
+    toggleBtn.addEventListener('click', () => {
+      if (timeLeft <= 0) return;
+      
+      if (isRunning) {
+        pauseTimer();
+      } else {
+        startTimer();
+      }
+    });
 
-    updateDisplay();
+    // Инициализация при старте
+    updateTimerDisplay();
+    startTimer();
   </script>
 </body>
 </html>
